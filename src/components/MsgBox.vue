@@ -1,12 +1,12 @@
 <template>
-    <div class="msgBox" v-show="this.$store.state.msgShow">
+    <div class="msgBox" v-show="this.$store.state.msg.msgShow">
         <div class="msgBg"></div>
         <div class="msgLayout">
-            <b class="msgClose" @click="this.$store.commit('msgClose')">x</b>
-            <div class="msgTitle">{{this.$store.state.msgTitle}}</div>
+            <b class="msgClose" @click="this.$store.commit('closeMsg')">x</b>
+            <div class="msgTitle">{{this.$store.state.msg.msgTitle}}</div>
             <div class="msgDesc">{{desc}}</div>
             <div class="msgCmd">
-                <button type="button">確定</button>
+                <button type="button" @click="this.$store.commit('closeMsg')">確定</button>
             </div>
         </div>
     </div>

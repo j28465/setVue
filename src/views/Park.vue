@@ -2,9 +2,10 @@
     <Msg></Msg>
     <div id="box">
         <h4 id="time">0時0分0秒</h4>
-        <button type="button" id="hint" @click="hintClick">提示or無解答</button>
+        <button type="button" @click="hintClick">提示or無解答</button>
+        <button type="button" @click="hintClick">剩下牌組</button>
         <div id="tableBoard">
-            <Card v-for="c in tableCards" :key="c" :ary="c"></Card>
+            <Card v-for="c in this.$store.getters.getTableTopCards" :key="c" :ary="c.join(',')"></Card>
         </div>
     </div>
 </template>
@@ -13,21 +14,15 @@
 import Card from '@/components/Card.vue'
 import Msg from '@/components/MsgBox.vue'
 import { defineComponent } from 'vue'
-import { mapMutations } from 'vuex'
+import { mapState, mapMutations, mapGetters } from 'vuex'
 
 class desk{
     tableBoard: HTMLElement;
-    cards: number[][];
-    tableCards: string[];
-    clickAry: string[];
-    hint: string[];
+    clickAry: number[][];
 
     constructor(){
         this.tableBoard = new HTMLElement;
-        this.cards = [[]];
-        this.tableCards = [];
         this.clickAry = [];
-        this.hint = [];
     }
 }
 
@@ -39,46 +34,28 @@ export default defineComponent({
     {
         return {
             tableBoard: document.getElementById("tableBoard") as HTMLFormElement,            
-            cards: [[]],    //海底的牌
-            tableCards: [], //桌面上的牌
-            clickAry: [],   //已選擇的牌
-            hint: []        //這次提示的牌
+            clickAry: []    //已選擇的牌
         }
     },
     mounted(): void{
+        this.tableBoard = document.getElementById("tableBoard") as HTMLFormElement;
         //產生所有牌
-        for (let a = 1; a <= 3; ++a) {
-            for (let b = 1; b <= 3; ++b) {
-                for (let c = 1; c <= 3; ++c) {
-                    for (let d = 1; d <= 3; ++d) {
-                        this.cards.push([a, b, c, d]);
-                    }
-                }
-            }
-        }
+        this.pushCard();
         //隨機排序
-        let len: number = this.cards.length;
-        let index: number;
-        let tmp: number[];
-        while (len > 0) {
-            index = Math.floor(Math.random() * len);
-            len--;
-
-            tmp = this.cards[len];
-            this.cards[len] = this.cards[index];
-            this.cards[index] = tmp;
-        }
+        this.shuffle();
         //紀錄現在檯面上的牌
-        for(let i = 0; i<12;++i){
-            this.tableCards.push(this.cards.pop()?.join(',') ?? "");
-        }
+        if(this.getTableTopCards.length == 0) this.dealNew(12);
     },
+    // computed:{
+    //     ...mapState(["test"])
+    // },
     methods:
     {
-        ...mapMutations({msgOpen: "msgOpen"}),
+        //...mapState(["test"]),
+        ...mapMutations(["openMsg", "pushCard", "shuffle", "deal", "dealNew", "removeTableTopCards", "pushMarkCards"]),
+        ...mapGetters(["drawCard", "getCards", "getTableTopCard", "getTableTopCards", "getMarkCards"]),
         choose(t: HTMLElement):void 
         {
-            
             let target: HTMLElement = t;
             //選取的card
             while (!target.classList.contains("card")) 
@@ -87,11 +64,13 @@ export default defineComponent({
             }
 
             if (target.classList.contains("lock")) {
-                this.removeArray(this.clickAry, target.getAttribute("data-ary") ?? "");
+                //取消選擇
+                var index = this.clickAry.indexOf(target.getAttribute("data-ary")?.split(',').map(v => parseInt(v)) as number[]);
+                this.clickAry.splice(index, 1);
                 target.classList.remove("lock");
             }
             else {
-                this.clickAry.push(target.getAttribute("data-ary") as string);
+                this.clickAry.push(target.getAttribute("data-ary")?.split(',').map(v => parseInt(v)) as number[]);
                 target.classList.add("lock");
                 if(this.clickAry.length == 3){
                     //檢查所選牌組是否符合
@@ -111,29 +90,24 @@ export default defineComponent({
             {        
                  setTimeout( () => { 
                     this.tableBoard.classList.add("ans");
-                    document.querySelectorAll("#tableBoard div.lock").forEach((e) =>{ 
-                        if(this.tableCards.length > 12)
-                        {
-                            //清除現在檯面上被選走的牌
-                            this.removeArray(this.tableCards, e.getAttribute("data-ary") as string);
-                            e.remove();
-                        }
-                        else
-                        {
-                            //清除現在檯面上被選走的牌
-                            this.removeArray(this.tableCards, e.getAttribute("data-ary") as string);
-                            //清除被選走的牌
-                            e.setAttribute("data-ary", "");
-                            //e.firstElementChild.innerHTML = "";
-                            //放上新的牌
-                            if(this.cards.length > 0) 
+                    document.querySelectorAll("#tableBoard .card").forEach((e, i) =>{ 
+                        if(e.classList.contains("lock")){
+                            if(this.getTableTopCards.length > 12)
                             {
-                                for(let i = 0; i < 3;++i){
-                                    this.tableCards.push(this.cards.pop()?.join(',') as string);
-                                }      
+                                //清除現在檯面上被選走的牌
+                                this.removeTableTopCards(i);
+                                //刪除外框
+                                e.remove();
                             }
-                            else if(this.tableCards.length == 0)
-                                this.msgOpen({title: "遊戲結束"});
+                            else
+                            {                                
+                                //清空或在同位置放上新的牌
+                                this.deal(i);
+                                // let len:number[] = this.getTableTopCards().map((v: number[]) => v as number[] != []);
+                                // console.log(len);
+                                // if(len.length == 0)
+                                //     this.openMsg({title: "遊戲結束"});
+                            }
                         }
                     }); 
                     //解除反灰
@@ -149,35 +123,39 @@ export default defineComponent({
                         e.classList.remove("lock");
                     });
                 }, 300);
-                this.msgOpen({title: "答錯ㄌ"});
+                this.openMsg({title: "答錯ㄌ"});
             }
         },
         hintClick(): void 
         {   
             //提示or無解答
-            if(this.hint.length > 0)
+            if(this.getMarkCards().length > 0)
             {
-                //選擇第二或三張牌
-                let target: string = this.hint.pop() as string;
+                // //選擇第二或三張牌
+                let target: number[] = this.drawCard();
                 this.clickAry.push(target);
                 document.querySelectorAll("#tableBoard div[data-ary='"+ target +"']")[0].classList.add("lock");
                 //第三張牌的話，清空、(發牌)、解除反灰
-                if(this.hint.length == 0) this.distribute();
+                if(this.getMarkCards().length == 0) this.distribute();
             }
             else
             {
                 let jdg = false;
                 //產生一組解答
-                let len = this.tableCards.length;
+                let len = this.getTableTopCards().length;
                 for(let t1 = 0; t1 < len; ++t1)
                 {
                     for(let t2 = t1+1; t2 < len; ++t2)
                     {
                         for(let t3 = t2+1; t3 < len; ++t3)
                         {
-                            this.hint = [this.tableCards[t1],this.tableCards[t2],this.tableCards[t3]];
-                            jdg = this.verify(this.hint);
-                            if (jdg) break;
+                            let tmp: number[][] = [this.getTableTopCards()[t1],this.getTableTopCards()[t2],this.getTableTopCards()[t3]];
+                            jdg = this.verify(tmp);
+                            
+                            if (jdg) {
+                                this.pushMarkCards(tmp);
+                                break;
+                            }
                         }
                         if (jdg) break;
                     }
@@ -192,36 +170,25 @@ export default defineComponent({
                     document.querySelectorAll("#tableBoard div.lock").forEach(function(e){
                         e.classList.remove("lock");
                     });
-                    //選擇第一張牌
-                    let target: string = this.hint.pop() as string;
-                    this.clickAry.push(target);
-                    document.querySelectorAll("#tableBoard div[data-ary='"+ target +"']")[0].classList.add("lock");
+                    //選擇第一張牌                  
+                    this.hintClick();
                 }
                 else    
                 {
-                    this.hint = [];
                     //沒答案發牌
-                    if(this.cards.length > 0)
+                    if(this.getCards().length > 0)
                     {
-                        for(let i = 0; i < 3;++i){
-                            this.tableCards.push(this.cards.pop()?.join(',') as string);
-                        }   
+                        this.dealNew(3);
                     }
                     else
                     {
                         //clearInterval(Timer);
-                        alert("遊戲結束");
+                        this.openMsg({title: "遊戲結束"});
                     }
                 }
             }
         },
-        removeArray(array: string[], _target: string): void 
-        {
-            //取消選擇
-            var index = array.indexOf(_target);
-            array.splice(index, 1);
-        },
-        verify(ary: string[]): boolean
+        verify(ary: number[][]): boolean
         {
             //檢查所選牌組是否符合
             let jdg = true;
@@ -229,7 +196,7 @@ export default defineComponent({
                 let tmp = 0;
                 //三張牌
                 for (var j = 0; j <= 2; ++j) {
-                    tmp += parseInt(ary[j].split(',')[i]);
+                    tmp += ary[j][i];
                 }
                 //有誤
                 if (tmp % 3 > 0) {
@@ -244,29 +211,6 @@ export default defineComponent({
 </script>
 
 <style lang="sass">
-    @font-face
-        font-family: 'icomoon'
-        src: url('../css/fonts/icomoon.eot?v00024'), url('../css/fonts/icomoon.eot?#iefixv00024') format('embedded-opentype'), url('../css/fonts/icomoon.woff?v00024') format('woff'), url('../css/fonts/icomoon.ttf?v00024') format('truetype'), url('../css/fonts/icomoon.svg?v00024#icomoon') format('svg')
-        font-weight: normal
-        font-style: normal
-    i
-        font-family: 'icomoon'
-        font-style: normal
-        font-weight: normal
-        font-variant: normal
-        text-transform: none
-        line-height: 1
-        -webkit-text-rendering: optimizeLegibility
-        -webkit-font-smoothing: antialiased
-        -moz-text-rendering: optimizeLegibility
-        -moz-font-smoothing: antialiased
-        -ms-text-rendering: optimizeLegibility
-        -ms-font-smoothing: antialiased
-        -o-text-rendering: optimizeLegibility
-        -o-font-smoothing: antialiased
-        text-rendering: optimizeLegibility
-        /*font-smoothing: antialiased;*/
-        margin: 0 1px
     html, body 
         touch-action: manipulation
         #box 
@@ -279,28 +223,10 @@ export default defineComponent({
                 width: 100%
                 margin: 0 auto
                 padding-top: 18px
-                > div 
-                    cursor: pointer
-                    font-size: calc(3.8vw)
-                    line-height: 2em
-                    width: 25%
-                    float: left
-                    user-select: none
-                    -webkit-user-select: none
-                    -moz-user-select: none
-                    > div 
-                        border: 1px solid #ccc
-                        margin: 1px
-                > div.lock 
+
+                .card.lock 
                     background: #ccc
             #tableBoard.ans 
-                > div.lock 
+                .card.lock 
                     border-color: #707070
-
-        .red 
-            color: #c90202
-        .green 
-            color: #1b6206
-        .blue 
-            color: #001eca
 </style>

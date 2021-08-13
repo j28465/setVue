@@ -1,18 +1,16 @@
-import { createStore } from 'vuex'
-
-export default createStore({
+export default {
+  namespace: true,
   state: {
-    msgShow: true,
+    msgShow: false,
     msgTitle: ""
   },
   mutations: {
-    msgClose(state){
-      console.log("msgClose");
+    closeMsg(state: { msgShow: boolean; }){
       state.msgShow = false;
     },
-    msgOpen(state, payload){
+    openMsg(state: { msgTitle: string; msgShow: boolean; }, payload: { title: string; }){
       state.msgTitle = payload.title;
       state.msgShow = true;
     }
   }
-})
+}
