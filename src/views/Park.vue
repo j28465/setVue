@@ -45,7 +45,7 @@ export default defineComponent({
         this.shuffle();
         //紀錄現在檯面上的牌
         if(this.getTableTopCards.length == 0) this.dealNew(12);
-    },
+    }, 
     // computed:{
     //     ...mapState(["test"])
     // },
