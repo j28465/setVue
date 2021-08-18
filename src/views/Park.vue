@@ -2,10 +2,11 @@
     <Msg></Msg>
     <div id="box">
         <h4 id="time">0時0分0秒</h4>
-        <button type="button" @click="hintClick">提示or無解答</button>
-        <button type="button" @click="hintClick">剩下牌組</button>
+        <button type="button" @click="this.$store.commit('pushCard'); this.start();">重新開始</button> |
+        <button type="button" @click="hintClick">提示or無解答</button> |
+        <button type="button" @click="$router.push('remaining')">剩下牌組</button>
         <div id="tableBoard">
-            <Card v-for="c in this.$store.getters.getTableTopCards" :key="c" :ary="c.join(',')"></Card>
+            <Card v-for="c in this.$store.state.card.tableTopCards" :key="c" :ary="c.join(',')"></Card>
         </div>
     </div>
 </template>
@@ -39,21 +40,29 @@ export default defineComponent({
     },
     mounted(): void{
         this.tableBoard = document.getElementById("tableBoard") as HTMLFormElement;
-        //產生所有牌
-        this.pushCard();
-        //隨機排序
-        this.shuffle();
-        //紀錄現在檯面上的牌
-        if(this.getTableTopCards.length == 0) this.dealNew(12);
+        if(this.tableTopCards.length == 0) {
+            this.start();
+        }
     }, 
-    // computed:{
-    //     ...mapState(["test"])
-    // },
+    computed: {
+        //...mapState("card", ["cards", "tableTopCards", "hintCards"]),
+        ...mapState({
+            cards: (state: any) => state.card.cards,
+            tableTopCards: (state: any) => state.card.tableTopCards,
+            hintCards: (state: any) => state.card.hintCards
+        })
+    },
     methods:
     {
-        //...mapState(["test"]),
-        ...mapMutations(["openMsg", "pushCard", "shuffle", "deal", "dealNew", "removeTableTopCards", "pushMarkCards"]),
-        ...mapGetters(["drawCard", "getCards", "getTableTopCard", "getTableTopCards", "getMarkCards"]),
+        ...mapMutations(["openMsg", "pushCard", "shuffleCards", "dealCards", "changeCard", "removeCard", "pushHintCards"]),
+        ...mapGetters(["drawCard", "remainingCards"]),
+        start(): void
+        {
+            //隨機排序
+            this.shuffleCards();
+            //紀錄現在檯面上的牌
+            this.dealCards(12);
+        },
         choose(t: HTMLElement):void 
         {
             let target: HTMLElement = t;
@@ -92,21 +101,21 @@ export default defineComponent({
                     this.tableBoard.classList.add("ans");
                     document.querySelectorAll("#tableBoard .card").forEach((e, i) =>{ 
                         if(e.classList.contains("lock")){
-                            if(this.getTableTopCards.length > 12)
+                            if(this.tableTopCards.length > 12)
                             {
                                 //清除現在檯面上被選走的牌
-                                this.removeTableTopCards(i);
+                                this.removeCard(i);
                                 //刪除外框
                                 e.remove();
                             }
                             else
                             {                                
                                 //清空或在同位置放上新的牌
-                                this.deal(i);
-                                // let len:number[] = this.getTableTopCards().map((v: number[]) => v as number[] != []);
-                                // console.log(len);
-                                // if(len.length == 0)
-                                //     this.openMsg({title: "遊戲結束"});
+                                this.changeCard(i);
+                                let len:number[][] = this.tableTopCards.filter((v: number[]) => v.length != 0);
+                                if(len.length == 0)
+                                    this.openMsg({title: "遊戲結束"});
+                                
                             }
                         }
                     }); 
@@ -129,31 +138,31 @@ export default defineComponent({
         hintClick(): void 
         {   
             //提示or無解答
-            if(this.getMarkCards().length > 0)
+            if(this.hintCards.length > 0)
             {
                 // //選擇第二或三張牌
                 let target: number[] = this.drawCard();
                 this.clickAry.push(target);
                 document.querySelectorAll("#tableBoard div[data-ary='"+ target +"']")[0].classList.add("lock");
                 //第三張牌的話，清空、(發牌)、解除反灰
-                if(this.getMarkCards().length == 0) this.distribute();
+                if(this.hintCards.length == 0) this.distribute();
             }
             else
             {
                 let jdg = false;
                 //產生一組解答
-                let len = this.getTableTopCards().length;
+                let len = this.tableTopCards.length;
                 for(let t1 = 0; t1 < len; ++t1)
                 {
                     for(let t2 = t1+1; t2 < len; ++t2)
                     {
                         for(let t3 = t2+1; t3 < len; ++t3)
                         {
-                            let tmp: number[][] = [this.getTableTopCards()[t1],this.getTableTopCards()[t2],this.getTableTopCards()[t3]];
+                            let tmp: number[][] = [this.tableTopCards[t1],this.tableTopCards[t2],this.tableTopCards[t3]];
                             jdg = this.verify(tmp);
                             
                             if (jdg) {
-                                this.pushMarkCards(tmp);
+                                this.pushHintCards(tmp);
                                 break;
                             }
                         }
@@ -176,9 +185,9 @@ export default defineComponent({
                 else    
                 {
                     //沒答案發牌
-                    if(this.getCards().length > 0)
+                    if(this.cards().length > 0)
                     {
-                        this.dealNew(3);
+                        this.dealCards(3);
                     }
                     else
                     {

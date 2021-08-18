@@ -3,12 +3,13 @@ export default {
     state: {
         cards: [],
         tableTopCards: [],
-        markCards: [],
-        test: "ttt"
+        hintCards: []
     },
     mutations:{
-        pushCard(state: { cards: number[][] })
+        pushCard(state: { cards: number[][], tableTopCards: number[][] })
         {   //產生牌
+            state.cards = [];
+            state.tableTopCards = [];
             for (let a = 1; a <= 3; ++a) {
                 for (let b = 1; b <= 3; ++b) {
                     for (let c = 1; c <= 2; ++c) {
@@ -19,8 +20,9 @@ export default {
                 }
             }
         },
-        shuffle(state: { cards: number[][] })
+        shuffleCards(state: { cards: number[][] })
         {   //隨機排序
+            console.log("shuffleCards");
             let len: number = state.cards.length;
             let index: number;
             let tmp: number[];
@@ -33,22 +35,23 @@ export default {
                 state.cards[index] = tmp;
             }
         },
-        deal(state: { cards: number[][], tableTopCards: number[][] }, index: number)
+        dealCards(state: { cards: number[][], tableTopCards: number[][] }, index: number)
         {
-            //清空或在同位置放上新的牌
-            state.tableTopCards[index] = state.cards.pop() ?? [];
-        },
-        dealNew(state: { cards: number[][], tableTopCards: number[][] }, index: number)
-        {
+            console.log("dealCards");
             //發牌
             for(let i = 0; i < index; ++i)
             {
                 state.tableTopCards.push(state.cards.pop() as number[]);
             }
         },
-        removeTableTopCards(state: { cards: number[][], tableTopCards: number[][] }, index: number)
+        changeCard(state: { cards: number[][], tableTopCards: number[][] }, index: number)
         {
-            //
+            //清空或在同位置放上新的牌
+            state.tableTopCards[index] = state.cards.pop() ?? [];
+        },
+        removeCard(state: { cards: number[][], tableTopCards: number[][] }, index: number)
+        {
+            //移除這張牌
             state.tableTopCards.splice(index, 1);
         },
         // checkCards(state: { tableTopCards: Number[][] }, _target: number[])
@@ -64,45 +67,36 @@ export default {
         //         }
         //     });
         // },
-        // pushMarkCards(state: { markCards: number[][] }, card: number[])
+        // pushHintCards(state: { markCards: number[][] }, card: number[])
         // {
         //     //
         //     state.markCards.push(card);
         // },
-        pushMarkCards(state: { markCards: number[][], tableTopCards: number[][] }, card: number[][])
+        pushHintCards(state: { hintCards: number[][] }, card: number[][])
         {
-            state.markCards = [];
+            //符合答案的提示牌組
+            state.hintCards = [];
             card.forEach((index: number[]) => 
             {
-                state.markCards.push(index);
+                state.hintCards.push(index);
             });
+            // state.hintCards = card;
         }
     },
     getters:
     {
-        drawCard(state: { markCards: number[][] })
+        drawCard(state: { hintCards: number[][] })
         {   //抽牌一張牌
             //return state.cards.pop()?.join(',') as String;
-            return state.markCards.pop()?.join(',') as string;
+            return state.hintCards.pop()?.join(',') as string;
         },
-        getCards(state: { cards: number[][] }): number[][]
-        {   
-            //海底的所有牌
-            return state.cards;
-        },
-        getTableTopCard(state:{tableTopCards: number[][]}, index: number): number[]
-        {
-            //選出桌上一張牌
-            return state.tableTopCards[index];
-        },
-        getTableTopCards(state:{tableTopCards: number[][]}): number[][]
-        {
-            //桌面上的所有牌
-            return state.tableTopCards;
-        },
-        getMarkCards(state: { markCards: number[][] })
-        {
-            return state.markCards;
+        // getTableTopCard(state:{tableTopCards: number[][]}, index: number): number[]
+        // {
+        //     //選出桌上一張牌
+        //     return state.tableTopCards[index];
+        // }
+        remainingCards(state:{tableTopCards: number[][]}): number{
+            return state.tableTopCards.filter(v => v!=[]).length;
         }
     }
 }

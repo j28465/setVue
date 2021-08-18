@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <Card v-for="v in this.$store.getters.getCards" :key="v" :ary="v.join(',')"></Card>
+  <div id="tableBoard">
+    <Card v-for="v in this.$store.state.card.cards" :key="v" :ary="v.join(',')"></Card>
   </div>
 </template>
 
@@ -11,6 +11,10 @@ export default {
 }
 </script>
 
-<style>
-
+<style lang="sass">
+  #tableBoard 
+      max-width: 746px
+      width: 100%
+      margin: 0 auto
+      padding-top: 18px
 </style>
