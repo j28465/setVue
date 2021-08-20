@@ -190,7 +190,7 @@ export default defineComponent({
                 else    
                 {
                     //沒答案發牌
-                    if(this.cards().length > 0)
+                    if(this.cards.length > 0)
                     {
                         this.dealCards(3);
                     }
