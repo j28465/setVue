@@ -2,7 +2,8 @@
     <Msg></Msg>
     <div id="box">
         <h4 id="time">0時0分0秒</h4>
-        <button type="button" @click="this.$store.commit('pushCard'); this.start();">重新開始</button> |
+        <div id="remain">剩下{{this.$store.state.card.cards.length}}張牌</div>
+        <button type="button" @click="this.$store.commit('pushCard', { level: this.$store.state.card.level}); this.start();">重新開始</button> |
         <button type="button" @click="hintClick">提示or無解答</button> |
         <button type="button" @click="$router.push('remaining')">剩下牌組</button>
         <div id="tableBoard">
@@ -39,9 +40,13 @@ export default defineComponent({
         }
     },
     mounted(): void{
+        console.log("park mounted");
         this.tableBoard = document.getElementById("tableBoard") as HTMLFormElement;
         if(this.tableTopCards.length == 0) {
-            this.start();
+            if(this.cards.length == 0) 
+                this.$router.push("/");
+            else
+                this.start();
         }
     }, 
     computed: {
@@ -224,15 +229,17 @@ export default defineComponent({
         touch-action: manipulation
         #box 
             text-align: center
+            position: relative
+            max-width: 746px
             width: 100%
+            margin: 0 auto
             #time
                 height: 1em
+            #remain
+                position: absolute
+                right: 0
             #tableBoard 
-                max-width: 746px
-                width: 100%
-                margin: 0 auto
                 padding-top: 18px
-
                 .card.lock 
                     background: #ccc
             #tableBoard.ans 

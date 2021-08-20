@@ -29,11 +29,10 @@ export default defineComponent({
     props:{
         ary: String
     },
-    data(): cardPack
-    {
+    setup(props): cardPack{
         let target = new cardPack();
         //拆成NUMBER陣列
-        let p:number[] = this.ary?.split(',').map(v => Number(v)) ?? [];
+        let p:number[] = props.ary?.split(',').map(v => Number(v)) ?? [];
         //形狀, 填充
         switch(p[0]) {
             //circle
@@ -55,6 +54,32 @@ export default defineComponent({
         target.dt = p.join(',');
         return target;
     }
+    // data(): cardPack
+    // {
+    //     let target = new cardPack();
+    //     //拆成NUMBER陣列
+    //     let p:number[] = this.ary?.split(',').map(v => Number(v)) ?? [];
+    //     //形狀, 填充
+    //     switch(p[0]) {
+    //         //circle
+    //         case 1: target.iconfont = "&#xa00"+p[2]; target.style.transform = "rotate(180deg)"; break;
+    //         //square
+    //         case 2: target.iconfont = "&#xb00"+p[2]; break;
+    //         //star
+    //         case 3: target.iconfont = "&#xc00"+p[2]; target.style.fontWeight = "bolder"; break;
+    //     }
+    //     //顏色
+    //     switch (p[1]) {
+    //         case 1: target.color = "red"; break;
+    //         case 2: target.color = "green"; break;
+    //         case 3: target.color = "blue"; break;
+    //     }
+    //     //數量
+    //     target.ct = p[3];
+    //     //data
+    //     target.dt = p.join(',');
+    //     return target;
+    // }
 });
 </script>
 

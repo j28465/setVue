@@ -1,5 +1,5 @@
 <template>
-  <div id="tableBoard">
+  <div id="content">
     <Card v-for="v in this.$store.state.card.cards" :key="v" :ary="v.join(',')"></Card>
   </div>
 </template>
@@ -12,9 +12,6 @@ export default {
 </script>
 
 <style lang="sass">
-  #tableBoard 
-      max-width: 746px
-      width: 100%
-      margin: 0 auto
+  #content 
       padding-top: 18px
 </style>
