@@ -40,7 +40,6 @@ export default defineComponent({
         }
     },
     mounted(): void{
-        console.log("park mounted");
         this.tableBoard = document.getElementById("tableBoard") as HTMLFormElement;
         if(this.tableTopCards.length == 0) {
             if(this.cards.length == 0) 
@@ -103,15 +102,18 @@ export default defineComponent({
             if (jdg) 
             {        
                  setTimeout( () => { 
+                    //被刪除的牌INDEX
+                    let rmIndex  = 0;
                     this.tableBoard.classList.add("ans");
                     document.querySelectorAll("#tableBoard .card").forEach((e, i) =>{ 
                         if(e.classList.contains("lock")){
                             if(this.tableTopCards.length > 12)
                             {
-                                //清除現在檯面上被選走的牌
-                                this.removeCard(i);
                                 //刪除外框
                                 e.remove();
+                                //清除現在檯面上被選走的牌
+                                this.removeCard({index: i-rmIndex});
+                                rmIndex++;
                             }
                             else
                             {                                
@@ -123,7 +125,7 @@ export default defineComponent({
                                 
                             }
                         }
-                    }); 
+                    });
                     //解除反灰
                     this.tableBoard.classList.remove("ans");
                     document.querySelectorAll("#tableBoard div.lock").forEach(function(e){ e.classList.remove("lock"); });
@@ -145,7 +147,7 @@ export default defineComponent({
             //提示or無解答
             if(this.hintCards.length > 0)
             {
-                // //選擇第二或三張牌
+                //選擇第二或三張牌
                 let target: number[] = this.drawCard();
                 this.clickAry.push(target);
                 document.querySelectorAll("#tableBoard div[data-ary='"+ target +"']")[0].classList.add("lock");
@@ -159,21 +161,31 @@ export default defineComponent({
                 let len = this.tableTopCards.length;
                 for(let t1 = 0; t1 < len; ++t1)
                 {
-                    for(let t2 = t1+1; t2 < len; ++t2)
+                    if(this.tableTopCards[t1].length > 0)
                     {
-                        for(let t3 = t2+1; t3 < len; ++t3)
+                        for(let t2 = t1+1; t2 < len; ++t2)
                         {
-                            let tmp: number[][] = [this.tableTopCards[t1],this.tableTopCards[t2],this.tableTopCards[t3]];
-                            jdg = this.verify(tmp);
-                            
-                            if (jdg) {
-                                this.pushHintCards(tmp);
-                                break;
+                            if(this.tableTopCards[t2].length > 0)
+                            {
+                                for(let t3 = t2+1; t3 < len; ++t3)
+                                {
+                                    if(this.tableTopCards[t3].length > 0)
+                                    {
+                                        let tmp: number[][] = [this.tableTopCards[t1],this.tableTopCards[t2],this.tableTopCards[t3]];
+                                        jdg = this.verify(tmp);
+                                        
+                                        if (jdg) {
+                                            console.log(tmp);
+                                            this.pushHintCards(tmp);
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (jdg) break;
                             }
                         }
                         if (jdg) break;
                     }
-                    if (jdg) break;
                 }
                 //有無解答
                 if(jdg)

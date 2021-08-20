@@ -59,10 +59,10 @@ export default {
             //清空或在同位置放上新的牌
             state.tableTopCards[index] = state.cards.pop() ?? [];
         },
-        removeCard(state: { cards: number[][], tableTopCards: number[][] }, index: number)
+        removeCard(state: { cards: number[][], tableTopCards: number[][] }, payload: {index: number, remove: boolean})
         {
             //移除這張牌
-            state.tableTopCards.splice(index, 1);
+            state.tableTopCards.splice(payload.index, 1);
         },
         pushHintCards(state: { hintCards: number[][] }, card: number[][])
         {
